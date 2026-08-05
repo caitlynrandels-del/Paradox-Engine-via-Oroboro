@@ -1,0 +1,275 @@
+import React, { useEffect, useRef, useState } from 'react';
+
+class OroboroSmartMatrix {
+  constructor() {
+    this.status = "🟢 ACTIVE // OROBORO.CORE // VOODOO:MATRIX";
+    this.nodes = [];
+  }
+}
+
+export default function OroboroArtifact() {
+  const canvasRef = useRef(null);
+  const [atp, setAtp] = useState(100);
+  const [radius, setRadius] = useState(120);
+  const [midiState, setMidiState] = useState("INITIALIZING...");
+
+  useEffect(() => {
+    const matrix = new OroboroSmartMatrix();
+    console.log(matrix.status);
+
+    const canvas = canvasRef.current;
+    const ctx = canvas.getContext('2d');
+    
+    let w = (canvas.width = window.innerWidth);
+    let h = (canvas.height = window.innerHeight);
+
+    const handleResize = () => {
+      w = canvas.width = window.innerWidth;
+      h = canvas.height = window.innerHeight;
+    };
+    window.addEventListener('resize', handleResize);
+
+    let fireflies = [];
+    let magicRunes = [];
+    let membranePulse = 0;
+    let electronAngle = 0;
+    let currentAtp = 100;
+    let targetR = 120;
+    let currentR = 120;
+
+    const cell = { x: w / 2, y: h / 2 };
+
+    for (let i = 0; i < 55; i++) {
+      fireflies.push({
+        x: Math.random() * w,
+        y: Math.random() * h,
+        vx: (Math.random() - 0.5) * 1.5,
+        vy: (Math.random() - 0.5) * 1.5,
+        size: Math.random() * 3 + 1.5,
+        captured: false
+      });
+    }
+
+    const triggerMIDI = (val = 100) => {
+      membranePulse = 2.2;
+      currentAtp += Math.floor(val / 3);
+      targetR += 4.5;
+      setAtp(currentAtp);
+      setRadius(Math.round(targetR));
+
+      for (let i = 0; i < 6; i++) {
+        magicRunes.push({
+          x: cell.x,
+          y: cell.y,
+          vx: (Math.random() - 0.5) * 6,
+          vy: (Math.random() - 0.5) * 6,
+          life: 1.0,
+          char: String.fromCharCode(0x0391 + Math.floor(Math.random() * 24))
+        });
+      }
+
+      fireflies.forEach(f => {
+        if (!f.captured) {
+          let dx = cell.x - f.x;
+          let dy = cell.y - f.y;
+          let dist = Math.sqrt(dx * dx + dy * dy);
+          if (dist < 450 || val > 75) {
+            f.vx += dx * 0.14;
+            f.vy += dy * 0.14;
+          }
+        }
+      });
+    };
+
+    const clickHandler = () => triggerMIDI(120);
+    window.addEventListener('click', clickHandler);
+
+    if (navigator.requestMIDIAccess) {
+      navigator.requestMIDIAccess().then(
+        acc => {
+          setMidiState("MIDI CONNECTED (ROLAND V51)");
+          for (let input of acc.inputs.values()) {
+            input.onmidimessage = m => {
+              if (m.data[0] >= 144 && m.data[0] <= 159 && m.data[2] > 0) {
+                triggerMIDI(m.data[2]);
+              }
+            };
+          }
+        },
+        () => setMidiState("CLICK TO INITIATE LENS PULSE")
+      );
+    } else {
+      setMidiState("CLICK TO INITIATE LENS PULSE");
+    }
+
+    let animationFrameId;
+
+    const animate = () => {
+      animationFrameId = requestAnimationFrame(animate);
+
+      // Void Background & Aurora Gradient wash
+      ctx.fillStyle = 'rgba(1, 4, 9, 0.28)';
+      ctx.fillRect(0, 0, w, h);
+
+      const grad = ctx.createRadialGradient(w / 2, h / 2, 50, w / 2, h / 2, w * 0.7);
+      grad.addColorStop(0, 'rgba(0, 243, 255, 0.04)');
+      grad.addColorStop(0.5, 'rgba(180, 0, 255, 0.02)');
+      grad.addColorStop(1, 'rgba(1, 4, 9, 0)');
+      ctx.fillStyle = grad;
+      ctx.fillRect(0, 0, w, h);
+
+      // LED Mesh Background Grid (Voodoo Matrix)
+      ctx.strokeStyle = 'rgba(0, 243, 255, 0.04)';
+      ctx.lineWidth = 1;
+      let gridSize = 45;
+      for (let x = 0; x < w; x += gridSize) {
+        ctx.beginPath();
+        ctx.moveTo(x, 0);
+        ctx.lineTo(x, h);
+        ctx.stroke();
+      }
+      for (let y = 0; y < h; y += gridSize) {
+        ctx.beginPath();
+        ctx.moveTo(0, y);
+        ctx.lineTo(w, y);
+        ctx.stroke();
+      }
+
+      cell.x = w / 2;
+      cell.y = h / 2;
+      currentR += (targetR - currentR) * 0.06;
+      membranePulse *= 0.90;
+      electronAngle += 0.035 + (membranePulse * 0.06);
+
+      // Gore-Tex Microporous Magical Membrane (Lens Skin)
+      ctx.beginPath();
+      ctx.arc(cell.x, cell.y, currentR + (membranePulse * 28), 0, Math.PI * 2);
+      ctx.strokeStyle = `rgba(180, 0, 255, ${0.35 + membranePulse * 0.55})`;
+      ctx.lineWidth = 2 + membranePulse * 4;
+      ctx.setLineDash([8, 4]);
+      ctx.shadowBlur = 45;
+      ctx.shadowColor = '#b000ff';
+      ctx.stroke();
+      ctx.setLineDash([]);
+
+      // Atomic / Arcane Magic Orbitals (Lens Structure)
+      for (let i = 0; i < 3; i++) {
+        ctx.save();
+        ctx.translate(cell.x, cell.y);
+        ctx.rotate(electronAngle * (i % 2 === 0 ? 0.7 : -0.5) + (i * Math.PI / 3));
+        ctx.beginPath();
+        ctx.ellipse(0, 0, currentR * (0.8 + i * 0.25), currentR * 0.3, 0, 0, Math.PI * 2);
+        ctx.strokeStyle = 'rgba(0, 243, 255, 0.25)';
+        ctx.lineWidth = 1.2;
+        ctx.shadowBlur = 15;
+        ctx.shadowColor = '#00f3ff';
+        ctx.stroke();
+
+        let ex = Math.cos(electronAngle * 2) * (currentR * (0.8 + i * 0.25));
+        let ey = Math.sin(electronAngle * 2) * (currentR * 0.3);
+        ctx.beginPath();
+        ctx.arc(ex, ey, 4, 0, Math.PI * 2);
+        ctx.fillStyle = '#ff00aa';
+        ctx.shadowBlur = 20;
+        ctx.shadowColor = '#ff00aa';
+        ctx.fill();
+        ctx.restore();
+      }
+
+      // Mitochondria / Alchemical Powerhouse Core
+      ctx.beginPath();
+      ctx.ellipse(
+        cell.x,
+        cell.y,
+        currentR * 0.45 + membranePulse * 12,
+        currentR * 0.25 + membranePulse * 7,
+        Date.now() * 0.001,
+        0,
+        Math.PI * 2
+      );
+      ctx.strokeStyle = `rgba(255, 120, 0, ${0.6 + membranePulse * 0.4})`;
+      ctx.lineWidth = 2;
+      ctx.shadowBlur = 35;
+      ctx.shadowColor = '#ff7800';
+      ctx.stroke();
+
+      // Organic Magic Runes
+      magicRunes.forEach((r, idx) => {
+        r.x += r.vx;
+        r.y += r.vy;
+        r.life -= 0.025;
+        if (r.life <= 0) {
+          magicRunes.splice(idx, 1);
+          return;
+        }
+        ctx.fillStyle = `rgba(255, 230, 100, ${r.life})`;
+        ctx.font = '12px monospace';
+        ctx.shadowBlur = 12;
+        ctx.shadowColor = '#ffe664';
+        ctx.fillText(r.char, r.x, r.y);
+      });
+
+      // Fireflies / Stardust Motes
+      fireflies.forEach(f => {
+        if (!f.captured) {
+          f.x += f.vx;
+          f.y += f.vy;
+          f.vx *= 0.98;
+          f.vy *= 0.98;
+          if (f.x < 0) f.x = w;
+          if (f.x > w) f.x = 0;
+          if (f.y < 0) f.y = h;
+          if (f.y > h) f.y = 0;
+
+          let dx = cell.x - f.x;
+          let dy = cell.y - f.y;
+          if (Math.sqrt(dx * dx + dy * dy) < currentR) {
+            f.captured = true;
+            currentAtp += 30;
+            targetR += 3;
+            setAtp(currentAtp);
+            setRadius(Math.round(targetR));
+          }
+        } else {
+          let angle = Date.now() * 0.003 + f.x;
+          f.x = cell.x + Math.cos(angle) * (currentR * 0.35 * Math.random());
+          f.y = cell.y + Math.sin(angle) * (currentR * 0.35 * Math.random());
+        }
+
+        ctx.beginPath();
+        ctx.arc(f.x, f.y, f.size, 0, Math.PI * 2);
+        ctx.fillStyle = f.captured ? 'rgba(255, 230, 100, 0.95)' : 'rgba(0, 243, 255, 0.85)';
+        ctx.shadowBlur = 12;
+        ctx.shadowColor = f.captured ? '#ffe664' : '#00f3ff';
+        ctx.fill();
+      });
+    };
+
+    animate();
+
+    return () => {
+      window.removeEventListener('resize', handleResize);
+      window.removeEventListener('click', clickHandler);
+      cancelAnimationFrame(animationFrameId);
+    };
+  }, []);
+
+  return (
+    <div style={{ position: 'relative', width: '100vw', height: '100vh', overflow: 'hidden', background: '#010409', fontFamily: "'Courier New', monospace" }}>
+      <canvas ref={canvasRef} style={{ display: 'block', width: '100%', height: '100%', position: 'absolute', top: 0, left: 0, zIndex: 1 }} />
+      
+      <div style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', zIndex: 10, pointerEvents: 'none', padding: '25px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', boxSizing: 'border-box' }}>
+        <div style={{ background: 'rgba(1, 4, 9, 0.75)', border: '1px solid rgba(0, 243, 255, 0.4)', padding: '15px', borderRadius: '4px', backdropFilter: 'blur(6px)', boxShadow: '0 0 20px rgba(0, 243, 255, 0.15)', pointerEvents: 'auto', maxWidth: '380px' }}>
+          <h1 style={{ fontSize: '13px', letterSpacing: '3px', color: '#00f3ff', marginBottom: '8px', textShadow: '0 0 10px rgba(0,243,255,0.8)', margin: 0 }}>SKYUI // VOODOO:MATRIX</h1>
+          <p style={{ fontSize: '11px', lineHeight: '1.6', color: '#88ccff', margin: '4px 0' }}>CORE: OROBORO.ORGANIC &bull; [CELL = ATOM = MAGIC]</p>
+          <p style={{ fontSize: '11px', lineHeight: '1.6', color: '#88ccff', margin: '4px 0' }}>LENS STATE: <span style={{ color: '#ff0055', textShadow: '0 0 8px rgba(255, 0, 85, 0.8)' }}>REAL-TIME ACTIVE</span></p>
+        </div>
+
+        <div style={{ background: 'rgba(1, 4, 9, 0.75)', border: '1px solid rgba(0, 243, 255, 0.4)', padding: '15px', borderRadius: '4px', backdropFilter: 'blur(6px)', boxShadow: '0 0 20px rgba(0, 243, 255, 0.15)', pointerEvents: 'auto', maxWidth: '380px' }}>
+          <p style={{ fontSize: '11px', lineHeight: '1.6', color: '#88ccff', margin: '4px 0' }}>ATP / MANA: <span style={{ color: '#ffe664', textShadow: '0 0 8px rgba(255, 230, 100, 0.8)' }}>{atp}</span> &bull; RADIUS: <span style={{ color: '#ff0055', textShadow: '0 0 8px rgba(255, 0, 85, 0.8)' }}>{radius}</span></p>
+          <p style={{ marginTop: '5px', fontSize: '10px', opacity: 0.7, color: '#88ccff' }}>{midiState}</p>
+        </div>
+      </div>
+    </div>
+  );
+}
